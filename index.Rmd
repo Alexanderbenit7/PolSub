@@ -1,0 +1,99 @@
+## Las y los ciudadanos no representados
+
+**Un análisis de los votos que no están en el Congreso 2021-2022**
+
+
+El análisis presentado a continuación, busca conocer el número de ciudadanos y ciudadanas en cada departamento del país que no se encuentran representados en el Congreso de la República. Para ello, al 100% de actas contabilizadas por la ONPE, el análisis toma como los "no representados" a todos aquellos ciudadanos y ciudadanas que a) no fueron a votar, b) emitieron un voto invalido o c) votaron por alguna organización política que no pasó la valla electoral.
+
+Los resultados son los siguientes. La ONPE registra un total de casi 25 millones de electores hábiles en las últimas elecciones congresales del año 2021. De dicho total, no obstante, solo el 41% de electores ha visto su voto ser representado en el nuevo Congreso a puertas de instalarse. Más de 14 millones de ciudadanos (59% del total de electores hábiles) no votaron por ninguna de las opciones que, hoy, llevan agendas a la nueva legislatura.
+
+Todo ello, sin embargo, es disparejo a nivel territorial. Hay departamentos que, en comparación al total de ciudadanos y ciudadanas que se encuentran en su circuncripción, tienen un valor de "no-representación" superior al reportado a nivel nacional. Lo que se muestra a continuación es un análisis georreferenciado de la proporción de ciudadanos y ciudadanas no representadas a nivel departamental. Se construyeron tres conglomerados en base a la distribución de los datos los cuales se muestran a continuación:
+
+- Rango 1: Entre 53.34% y 56.79%
+- Rango 2: Entre 57% y 63.52%
+- Rango 3: Más de 63.53%
+
+```{r include=FALSE}
+folder='departamentos'
+fileName='DEPARTAMENTO.shp' # nivel 2 son provincias
+fileToRead=file.path(folder,fileName)
+
+library(rgdal)
+PeruDepa <- rgdal::readOGR(fileToRead,stringsAsFactors=FALSE)
+```
+
+```{r include=FALSE}
+data = read.csv("data.csv")
+```
+
+```{r include=FALSE}
+data = data[-c(7,15,16),]
+```
+
+```{r include=FALSE}
+data = data[,c(2,10,11)]
+```
+
+```{r include=FALSE}
+colnames(data) = c("DEPARTAMENTO","REPRESENTADOS","NoREPRESENTADOS")
+```
+
+```{r include=FALSE}
+etiquetas = c(1,2,3)
+data$NoRepresentadosOrd = cut(data$NoREPRESENTADOS,
+                              breaks = 3,
+                              labels = etiquetas,
+                              ordered_result = T)
+```
+
+```{r include=FALSE}
+min(data[data$NoRepresentadosOrd == 1,]$NoREPRESENTADOS)
+max(data[data$NoRepresentadosOrd == 1,]$NoREPRESENTADOS)
+
+min(data[data$NoRepresentadosOrd == 2,]$NoREPRESENTADOS)
+max(data[data$NoRepresentadosOrd == 2,]$NoREPRESENTADOS)
+
+min(data[data$NoRepresentadosOrd == 3,]$NoREPRESENTADOS)
+max(data[data$NoRepresentadosOrd == 3,]$NoREPRESENTADOS)
+```
+
+```{r include=FALSE}
+library(tidyverse)
+datat = data %>% group_by(NoRepresentadosOrd) %>% summarise(count = n ())
+```
+
+```{r include=FALSE}
+colnames(datat) = c("Rango","Departamentos")
+```
+
+La mayoría de departamentos se encuentran en los grupos 2 y 3, con 10 y 8 departamentos, respectivamente. Es decir, más del 58% de ciudadanos y ciudadanas de 18 departamentos del país no se encuentran representados en el nuevo Congreso. Los tres departamentos con porcentajes más altos de ciudadanas y ciudadanos no representados son Huancavelica (69.01%), Madre de Dios (68.28%) y Loreto (67.79%). Los resultados se muestran a continuación.
+
+```{r fig.height = 3.5, echo=FALSE,warning=FALSE}
+library(ggplot2)
+ggplot(data=datat, aes(x=Rango, y=Departamentos)) +
+  geom_bar(stat="identity", fill="darkgrey") + labs(title="Número de departamentos por grupo", y="Número de departamentos", x="Grupo") +theme(panel.background=element_rect(fill = "white", colour = "black")) + theme(plot.title = element_text(hjust = 0.5))+
+  geom_text(aes(label=Departamentos), vjust=1.6, color="white", size=4) + scale_y_continuous(breaks=seq(0,10,2))
+```
+
+Desde un enfoque territorial:
+
+```{r include=FALSE}
+PeruDepa=merge(PeruDepa,data,by.x="DEPARTAMEN", by.y = "DEPARTAMENTO",all.x=TRUE)
+```
+
+```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE,fig.show='hold',fig.width=8,fig.height=8.5}
+library(unikn)
+paleta=usecol(pal_signal, alpha = 0.67) #colores
+plot(PeruDepa,col='white',border=NA) 
+plot(PeruDepa,
+     col=paleta[PeruDepa$NoRepresentadosOrd],
+     border='NA',add=T)
+
+legend("bottomleft",
+       title='% de ciudadanas y ciudadanos \n no representados',
+       legend=c(paste0("Entre 53.34% y 56.79%"),
+                paste0("Entre 57.00% y 63.52%"),
+                paste0("Más de 63.53%")
+                ),
+           fill=paleta,cex=1.1,bty = "n")
+```
